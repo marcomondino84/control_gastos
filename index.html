@@ -69,21 +69,14 @@
       margin-bottom: 20px;
     }
 
-    /* Tarjetas de Resumen */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
     .summary-card {
       background: linear-gradient(135deg, var(--primary), #6366f1);
       color: white;
       border-radius: 16px;
       padding: 20px;
-      text-align: container;
+      text-align: center;
       box-shadow: 0 10px 15px -3px rgb(79 70 229 / 0.2);
+      margin-bottom: 20px;
     }
 
     .summary-card h3 {
@@ -99,7 +92,6 @@
       margin-top: 8px;
     }
 
-    /* Formulario */
     .form-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -159,7 +151,6 @@
       background-color: var(--primary-hover);
     }
 
-    /* Lista de transacciones */
     .section-title {
       font-size: 1.1rem;
       font-weight: 600;
@@ -262,7 +253,7 @@
     <div class="card">
       <h2 class="section-title" style="margin-bottom: 14px;">Registrar Nuevo Movimiento</h2>
       <form id="expense-form" class="form-grid">
-        <div class="form-group" style="grid-column: span 1;">
+        <div class="form-group">
           <label for="desc">Descripción</label>
           <input type="text" id="desc" placeholder="Ej. Supermercado, Alquiler..." required>
         </div>
@@ -309,7 +300,6 @@
     const totalAmountEl = document.getElementById('total-amount');
     const txCountEl = document.getElementById('tx-count');
 
-    // Cargar datos almacenados en el navegador (LocalStorage)
     let expenses = JSON.parse(localStorage.getItem('advanced_expenses')) || [];
 
     function updateApp() {
@@ -359,7 +349,7 @@
       const category = categorySelect.value;
 
       if (desc && !isNaN(amount) && amount > 0) {
-        expenses.unshift({ desc, amount, category }); // Añade al inicio de la lista
+        expenses.unshift({ desc, amount, category });
         descInput.value = '';
         amountInput.value = '';
         categorySelect.selectedIndex = 0;
@@ -372,7 +362,6 @@
       updateApp();
     };
 
-    // Inicializar renderizado inicial al cargar la página
     renderTransactions();
 
     // Registro del Service Worker para funcionamiento como PWA
