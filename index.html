@@ -1,375 +1,540 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control Financiero Avanzado</title>
-  
-  <!-- Enlace obligatorio al Manifiesto de la PWA -->
-  <link rel="manifest" href="./manifest.json">
-  
-  <!-- Color de la barra de navegación en móviles -->
-  <meta name="theme-color" content="#4f46e5">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Financiero - Control de Gastos</title>
+    
+    <!-- Enlace al manifiesto de la aplicación y color de tema para Android -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#6366f1">
 
-  <style>
-    :root {
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --success: #10b981;
-      --danger: #ef4444;
-      --bg-color: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 20px 12px;
+            display: flex;
+            justify-content: center;
+        }
 
-    .app-container {
-      width: 100%;
-      max-width: 600px;
-    }
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
 
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
 
-    header h1 {
-      font-size: 1.85rem;
-      color: var(--primary);
-      font-weight: 700;
-    }
+        header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
 
-    header p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-top: 4px;
-    }
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
 
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-      margin-bottom: 20px;
-    }
+        /* Dashboard de Resumen */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
 
-    .summary-card {
-      background: linear-gradient(135deg, var(--primary), #6366f1);
-      color: white;
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 10px 15px -3px rgb(79 70 229 / 0.2);
-      margin-bottom: 20px;
-    }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 14px;
+            border-radius: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+        }
 
-    .summary-card h3 {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.9;
-    }
+        .stat-card.full-width {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+        }
 
-    .summary-card .amount {
-      font-size: 2.25rem;
-      font-weight: 700;
-      margin-top: 8px;
-    }
+        .stat-card.full-width .stat-label,
+        .stat-card.full-width .stat-value {
+            color: white;
+        }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
-    }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-    @media (min-width: 480px) {
-      .form-grid {
-        grid-template-columns: 2fr 1fr 1fr;
-      }
-    }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 4px;
+            color: var(--text-main);
+        }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
+        .stat-card.full-width .stat-value {
+            font-size: 1.75rem;
+        }
 
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--text-main);
-    }
+        /* Tarjetas de Contenido */
+        .card {
+            background-color: var(--card-bg);
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
 
-    input, select {
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 1rem;
-      outline: none;
-      background-color: #f8fafc;
-      transition: all 0.2s;
-    }
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 14px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    input:focus, select:focus {
-      border-color: var(--primary);
-      background-color: #fff;
-      box-shadow: 0 0 0 3px rgb(79 70 229 / 0.1);
-    }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
 
-    .btn-submit {
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      width: 100%;
-      grid-column: 1 / -1;
-      margin-top: 5px;
-    }
+        .form-group {
+            margin-bottom: 12px;
+        }
 
-    .btn-submit:hover {
-      background-color: var(--primary-hover);
-    }
+        .form-group.full {
+            grid-column: span 2;
+        }
 
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+        }
 
-    .transaction-list {
-      list-style: none;
-      max-height: 300px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: #fff;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
 
-    .transaction-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px;
-      border-bottom: 1px solid var(--border);
-      transition: background-color 0.2s;
-    }
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
 
-    .transaction-item:last-child {
-      border-bottom: none;
-    }
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
 
-    .transaction-item:hover {
-      background-color: #f8fafc;
-      border-radius: 8px;
-    }
+        .btn-primary:active {
+            background-color: var(--primary-dark);
+        }
 
-    .tx-info h4 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-main);
-    }
+        /* Lista de Gastos */
+        .filter-container {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
 
-    .tx-info span {
-      font-size: 0.75rem;
-      background-color: #e0e7ff;
-      color: var(--primary);
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-weight: 600;
-      display: inline-block;
-      margin-top: 4px;
-    }
+        .filter-btn {
+            background: #f1f5f9;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+        }
 
-    .tx-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
 
-    .tx-amount {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--danger);
-    }
+        .expense-item {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--danger);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            position: relative;
+        }
 
-    .btn-delete {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      cursor: pointer;
-      font-size: 1.2rem;
-      transition: color 0.2s;
-    }
+        .expense-item.paid {
+            border-left-color: var(--success);
+        }
 
-    .btn-delete:hover {
-      color: var(--danger);
-    }
+        .expense-item.partial {
+            border-left-color: var(--warning);
+        }
 
-    .empty-state {
-      text-align: center;
-      color: var(--text-muted);
-      padding: 24px 0;
-      font-size: 0.95rem;
-    }
-  </style>
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .expense-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .expense-category {
+            font-size: 0.7rem;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .expense-body {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .expense-body b {
+            color: var(--text-main);
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .actions button {
+            flex: 1;
+            padding: 7px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-success { background-color: var(--success); }
+        .btn-warning { background-color: var(--warning); }
+        .btn-danger { background-color: #ef4444; }
+        .btn-secondary { background-color: #cbd5e1; color: var(--text-main); }
+
+        .empty-state {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="app-container">
+<div class="container">
     <header>
-      <h1>Control Financiero</h1>
-      <p>Gestiona tus gastos diarios de forma inteligente</p>
+        <h1>Control Financiero</h1>
+        <p>Administra tus gastos, impuestos y tarjetas del mes</p>
     </header>
 
-    <!-- Balance Total -->
-    <div class="summary-card">
-      <h3>Gasto Total Acumulado</h3>
-      <div class="amount" id="total-amount">$0.00</div>
+    <!-- Panel Resumen Financiero -->
+    <div class="dashboard-grid">
+        <div class="stat-card full-width">
+            <div class="stat-label">Total Mes Ingresado</div>
+            <div class="stat-value" id="lblTotal">$0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Pagado</div>
+            <div class="stat-value" id="lblPaid" style="color: var(--success);">$0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Restante a Pagar</div>
+            <div class="stat-value" id="lblRemaining" style="color: var(--danger);">$0.00</div>
+        </div>
     </div>
 
-    <!-- Formulario Completo -->
+    <!-- Formulario para agregar registro -->
     <div class="card">
-      <h2 class="section-title" style="margin-bottom: 14px;">Registrar Nuevo Movimiento</h2>
-      <form id="expense-form" class="form-grid">
-        <div class="form-group">
-          <label for="desc">Descripción</label>
-          <input type="text" id="desc" placeholder="Ej. Supermercado, Alquiler..." required>
-        </div>
+        <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto / Impuesto</h3>
+        <form id="expenseForm">
+            <div class="form-group full">
+                <label for="name">Concepto</label>
+                <input type="text" id="name" required placeholder="Ej: Tarjeta Visa, Alquiler, Luz">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="totalAmount">Monto Total ($)</label>
+                    <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoría</label>
+                    <select id="category">
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Impuesto/Servicio">Impuesto/Servicio</option>
+                        <option value="Préstamo/Deuda">Préstamo/Deuda</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group full">
+                <label for="dueDate">Fecha de Vencimiento (Opcional)</label>
+                <input type="date" id="dueDate">
+            </div>
+            <button type="submit" class="btn-primary">Registrar Gasto</button>
+        </form>
+    </div>
+
+    <!-- Lista de Gastos con Filtros -->
+    <div class="card">
+        <h3><i class="fa-solid fa-list-check" style="color:var(--primary)"></i> Detalle de Mis Gastos</h3>
         
-        <div class="form-group">
-          <label for="amount">Monto ($)</label>
-          <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="filterExpenses('all', this)">Todos</button>
+            <button class="filter-btn" onclick="filterExpenses('pending', this)">Pendientes</button>
+            <button class="filter-btn" onclick="filterExpenses('partial', this)">Parciales</button>
+            <button class="filter-btn" onclick="filterExpenses('paid', this)">Pagados</button>
         </div>
 
-        <div class="form-group">
-          <label for="category">Categoría</label>
-          <select id="category">
-            <option value="Comida">Comida</option>
-            <option value="Servicios">Servicios</option>
-            <option value="Transporte">Transporte</option>
-            <option value="Entretenimiento">Entretenimiento</option>
-            <option value="Otros">Otros</option>
-          </select>
-        </div>
-
-        <button type="submit" class="btn-submit">Guardar Gasto</button>
-      </form>
+        <div id="expensesList"></div>
     </div>
+</div>
 
-    <!-- Historial de Transacciones -->
-    <div class="card">
-      <div class="section-title">
-        <span>Historial de Gastos</span>
-        <span id="tx-count" style="font-size: 0.85rem; color: var(--text-muted);">0 items</span>
-      </div>
-      <ul id="transaction-list" class="transaction-list">
-        <div class="empty-state">No hay registros cargados todavía.</div>
-      </ul>
-    </div>
-  </div>
+<script>
+    let expenses = JSON.parse(localStorage.getItem('expenses_v3')) || [];
+    let currentFilter = 'all';
 
-  <!-- Lógica y Persistencia de la Aplicación -->
-  <script>
-    const expenseForm = document.getElementById('expense-form');
-    const descInput = document.getElementById('desc');
-    const amountInput = document.getElementById('amount');
-    const categorySelect = document.getElementById('category');
-    const transactionList = document.getElementById('transaction-list');
-    const totalAmountEl = document.getElementById('total-amount');
-    const txCountEl = document.getElementById('tx-count');
+    const expenseForm = document.getElementById('expenseForm');
+    const expensesList = document.getElementById('expensesList');
+    
+    const lblTotal = document.getElementById('lblTotal');
+    const lblPaid = document.getElementById('lblPaid');
+    const lblRemaining = document.getElementById('lblRemaining');
 
-    let expenses = JSON.parse(localStorage.getItem('advanced_expenses')) || [];
+    expenseForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('name').value;
+        const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+        const category = document.getElementById('category').value;
+        const dueDate = document.getElementById('dueDate').value;
 
-    function updateApp() {
-      localStorage.setItem('advanced_expenses', JSON.stringify(expenses));
-      renderTransactions();
-    }
+        const newExpense = {
+            id: Date.now(),
+            name,
+            totalAmount,
+            paidAmount: 0,
+            category,
+            dueDate: dueDate ? dueDate : null
+        };
 
-    function renderTransactions() {
-      transactionList.innerHTML = '';
-      
-      if (expenses.length === 0) {
-        transactionList.innerHTML = '<div class="empty-state">No hay registros cargados todavía.</div>';
-        totalAmountEl.innerText = '$0.00';
-        txCountEl.innerText = '0 items';
-        return;
-      }
-
-      let total = 0;
-      txCountEl.innerText = `${expenses.length} item${expenses.length > 1 ? 's' : ''}`;
-
-      expenses.forEach((item, index) => {
-        total += item.amount;
-
-        const li = document.createElement('li');
-        li.className = 'transaction-item';
-        li.innerHTML = `
-          <div class="tx-info">
-            <h4>${item.desc}</h4>
-            <span>${item.category}</span>
-          </div>
-          <div class="tx-right">
-            <div class="tx-amount">-$${item.amount.toFixed(2)}</div>
-            <button class="btn-delete" onclick="removeExpense(${index})" title="Eliminar">&times;</button>
-          </div>
-        `;
-        transactionList.appendChild(li);
-      });
-
-      totalAmountEl.innerText = `$${total.toFixed(2)}`;
-    }
-
-    expenseForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const desc = descInput.value.trim();
-      const amount = parseFloat(amountInput.value);
-      const category = categorySelect.value;
-
-      if (desc && !isNaN(amount) && amount > 0) {
-        expenses.unshift({ desc, amount, category });
-        descInput.value = '';
-        amountInput.value = '';
-        categorySelect.selectedIndex = 0;
-        updateApp();
-      }
+        expenses.push(newExpense);
+        saveAndRender();
+        expenseForm.reset();
+        document.getElementById('name').focus();
     });
 
-    window.removeExpense = function(index) {
-      expenses.splice(index, 1);
-      updateApp();
-    };
-
-    renderTransactions();
-
-    // Registro del Service Worker para funcionamiento como PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('Service Worker de PWA activo y registrado.'))
-        .catch((err) => console.log('Error al registrar Service Worker:', err));
+    function saveAndRender() {
+        localStorage.setItem('expenses_v3', JSON.stringify(expenses));
+        renderDashboard();
+        renderExpenses();
     }
-  </script>
+
+    function renderDashboard() {
+        let total = 0;
+        let paid = 0;
+
+        expenses.forEach(exp => {
+            total += exp.totalAmount;
+            paid += exp.paidAmount;
+        });
+
+        const remaining = total - paid;
+
+        lblTotal.textContent = `$${total.toFixed(2)}`;
+        lblPaid.textContent = `$${paid.toFixed(2)}`;
+        lblRemaining.textContent = `$${remaining.toFixed(2)}`;
+    }
+
+    function filterExpenses(status, btn) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderExpenses();
+    }
+
+    function renderExpenses() {
+        expensesList.innerHTML = '';
+
+        let filtered = expenses.filter(exp => {
+            const rem = exp.totalAmount - exp.paidAmount;
+            if (currentFilter === 'pending') return exp.paidAmount === 0;
+            if (currentFilter === 'partial') return exp.paidAmount > 0 && rem > 0.01;
+            if (currentFilter === 'paid') return rem <= 0.01;
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            expensesList.innerHTML = '<div class="empty-state">No hay registros en esta sección.</div>';
+            return;
+        }
+
+        filtered.forEach(exp => {
+            const remaining = exp.totalAmount - exp.paidAmount;
+            let statusClass = 'pending';
+            let statusText = 'Pendiente';
+
+            if (remaining <= 0.01) {
+                statusClass = 'paid';
+                statusText = 'Pagado Completo';
+            } else if (exp.paidAmount > 0) {
+                statusClass = 'partial';
+                statusText = 'Pago Parcial';
+            }
+
+            // Formatear la fecha opcional si existe
+            let dueDateHTML = '';
+            if (exp.dueDate) {
+                // Formato de fecha YYYY-MM-DD a legible DD/MM/YYYY
+                const parts = exp.dueDate.split('-');
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                dueDateHTML = `<br>Vence: <b>${formattedDate}</b>`;
+            }
+
+            const div = document.createElement('div');
+            div.className = `expense-item ${statusClass}`;
+            div.innerHTML = `
+                <div class="expense-header">
+                    <span class="expense-title">${exp.name}</span>
+                    <span class="expense-category">${exp.category}</span>
+                </div>
+                <div class="expense-body">
+                    Total: <b>$${exp.totalAmount.toFixed(2)}</b> | Pagado: <b>$${exp.paidAmount.toFixed(2)}</b><br>
+                    Restante: <b>$${remaining.toFixed(2)}</b> (${statusText})${dueDateHTML}
+                </div>
+                <div class="actions">
+                    <button class="btn-success" onclick="markAsPaid(${exp.id})" title="Marcar total pagado">Pagar Total</button>
+                    <button class="btn-warning" onclick="payPartial(${exp.id})" title="Registrar pago parcial">Parcial</button>
+                    <button class="btn-secondary" onclick="resetPayment(${exp.id})" title="Reiniciar pagos">Limpiar</button>
+                    <button class="btn-danger" onclick="deleteExpense(${exp.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+            expensesList.appendChild(div);
+        });
+    }
+
+    function markAsPaid(id) {
+        expenses = expenses.map(exp => {
+            if (exp.id === id) exp.paidAmount = exp.totalAmount;
+            return exp;
+        });
+        saveAndRender();
+    }
+
+    function payPartial(id) {
+        const exp = expenses.find(e => e.id === id);
+        const rem = exp.totalAmount - exp.paidAmount;
+        const input = prompt(`¿Cuánto pagaste de "${exp.name}"?\n(Restante actual: $${rem.toFixed(2)}):`);
+        
+        if (input !== null && input.trim() !== '' && !isNaN(input)) {
+            const amount = parseFloat(input);
+            if (amount > 0) {
+                exp.paidAmount += amount;
+                if (exp.paidAmount > exp.totalAmount) {
+                    exp.paidAmount = exp.totalAmount;
+                }
+                saveAndRender();
+            }
+        }
+    }
+
+    function resetPayment(id) {
+        expenses = expenses.map(exp => {
+            if (exp.id === id) exp.paidAmount = 0;
+            return exp;
+        });
+        saveAndRender();
+    }
+
+    function deleteExpense(id) {
+        if (confirm('¿Estás seguro de eliminar este gasto?')) {
+            expenses = expenses.filter(exp => exp.id !== id);
+            saveAndRender();
+        }
+    }
+
+    // Registro del Service Worker para cumplir con los estándares de PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+                .catch(err => console.log('Error al registrar el Service Worker:', err));
+        });
+    }
+
+    // Inicializar app
+    renderDashboard();
+    renderExpenses();
+</script>
+
 </body>
 </html>
