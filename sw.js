@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finanzas-v1';
+const CACHE_NAME = 'finanzas-v2';
 const assetsToCache = [
   './index.html',
   './manifest.json'
