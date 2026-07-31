@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Financiero Sincronizado</title>
+    <title>Control Financiero por Usuario</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#6366f1">
@@ -11,17 +11,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- SDK de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
     <style>
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
             --success: #10b981;
-            --warning: #f59e0b;
             --danger: #ef4444;
             --bg: #f8fafc;
             --card-bg: #ffffff;
@@ -33,7 +27,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg); color: var(--text-main); padding: 20px 12px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; }
-        
         .hidden { display: none !important; }
 
         #auth-screen {
@@ -89,13 +82,13 @@
 <body>
 
 <div class="container">
-    <!-- Pantalla de Login / Registro -->
+    <!-- Pantalla de Login / Registro Local por Usuario -->
     <div id="auth-screen">
         <h2>Iniciar Sesión</h2>
         <form id="authForm">
             <div class="form-group full">
-                <label for="authEmail">Correo Electrónico</label>
-                <input type="email" id="authEmail" required placeholder="tu@correo.com">
+                <label for="authEmail">Nombre de Usuario o Correo</label>
+                <input type="text" id="authEmail" required placeholder="Ej: marco o tu@correo.com">
             </div>
             <div class="form-group full">
                 <label for="authPass">Contraseña</label>
@@ -110,7 +103,7 @@
         <header>
             <h1>Control Financiero</h1>
             <div class="user-bar">
-                <span id="userEmailDisplay">usuario@correo.com</span>
+                <span id="userEmailDisplay">usuario</span>
                 <button onclick="logout()">Cerrar Sesión</button>
             </div>
         </header>
@@ -163,110 +156,94 @@
 </div>
 
 <script>
-    // Configuración de Firebase obtenida de tu consola
-    const firebaseConfig = {
-        apiKey: "AIzaSyBCr3piEwAVZQfGD08igE3EoN9UM3CKiPo",
-        authDomain: "app-gastos-b2512.firebaseapp.com",
-        projectId: "app-gastos-b2512",
-        storageBucket: "app-gastos-b2512.appspot.com",
-        messagingSenderId: "515143192123",
-        appId: "1:515143192123:web:147897a921ba95f767161e",
-        measurementId: "G-J8CP2H2WGL"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let currentUserId = null;
-    let unsubscribeExpenses = null;
+    let currentUser = null;
 
     const authScreen = document.getElementById('auth-screen');
     const appScreen = document.getElementById('app-screen');
     const authForm = document.getElementById('authForm');
     const userEmailDisplay = document.getElementById('userEmailDisplay');
 
+    // Comprobar si ya había una sesión abierta en este dispositivo
+    const savedUser = localStorage.getItem('current_user');
+    if (savedUser) {
+        loginUser(savedUser);
+    }
+
     authForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.getElementById('authEmail').value;
-        const pass = document.getElementById('authPass').value;
-
-        auth.signInWithEmailAndPassword(email, pass)
-            .catch(() => {
-                return auth.createUserWithEmailAndPassword(email, pass);
-            })
-            .catch((error) => {
-                alert("Error de autenticación: " + error.message);
-            });
+        const username = document.getElementById('authEmail').value.trim().toLowerCase();
+        
+        // Guardamos la sesión activa en el navegador
+        localStorage.setItem('current_user', username);
+        loginUser(username);
     });
 
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            currentUserId = user.uid;
-            userEmailDisplay.textContent = user.email;
-            authScreen.classList.add('hidden');
-            appScreen.classList.remove('hidden');
-            loadUserExpenses(user.uid);
-        } else {
-            currentUserId = null;
-            authScreen.classList.remove('hidden');
-            appScreen.classList.add('hidden');
-            if (unsubscribeExpenses) unsubscribeExpenses();
-        }
-    });
+    function loginUser(username) {
+        currentUser = username;
+        userEmailDisplay.textContent = username;
+        authScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        loadExpenses();
+    }
 
     function logout() {
-        auth.signOut();
+        localStorage.removeItem('current_user');
+        currentUser = null;
+        appScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
+        document.getElementById('authForm').reset();
+    }
+
+    // Obtener la clave única de almacenamiento para este usuario específico
+    function getUserKey() {
+        return 'expenses_' + currentUser;
     }
 
     const expenseForm = document.getElementById('expenseForm');
     expenseForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!currentUserId) return;
+        if (!currentUser) return;
 
         const name = document.getElementById('name').value;
         const totalAmount = parseFloat(document.getElementById('totalAmount').value);
         const category = document.getElementById('category').value;
 
-        db.collection("usuarios").doc(currentUserId).collection("gastos").add({
+        const newExpense = {
+            id: Date.now().toString(),
             name,
             totalAmount,
             paidAmount: 0,
-            category,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            expenseForm.reset();
-            document.getElementById('name').focus();
-        });
+            category
+        };
+
+        let expenses = JSON.parse(localStorage.getItem(getUserKey())) || [];
+        expenses.unshift(newExpense);
+        localStorage.setItem(getUserKey(), JSON.stringify(expenses));
+
+        expenseForm.reset();
+        document.getElementById('name').focus();
+        loadExpenses();
     });
 
-    function loadUserExpenses(uid) {
+    function loadExpenses() {
+        if (!currentUser) return;
+        let expenses = JSON.parse(localStorage.getItem(getUserKey())) || [];
+        renderApp(expenses);
+    }
+
+    function renderApp(expenses) {
         const expensesList = document.getElementById('expensesList');
         const lblTotal = document.getElementById('lblTotal');
         const lblPaid = document.getElementById('lblPaid');
         const lblRemaining = document.getElementById('lblRemaining');
 
-        unsubscribeExpenses = db.collection("usuarios").doc(uid).collection("gastos")
-            .orderBy('createdAt', 'desc')
-            .onSnapshot((snapshot) => {
-                let expenses = [];
-                snapshot.forEach(doc => {
-                    expenses.push({ id: doc.id, ...doc.data() });
-                });
-
-                renderApp(expenses);
-            });
-    }
-
-    function renderApp(expenses) {
-        const expensesList = document.getElementById('expensesList');
         expensesList.innerHTML = '';
 
         let total = 0;
         let paid = 0;
 
         if (expenses.length === 0) {
-            expensesList.innerHTML = '<div class="empty-state">No hay registros cargados.</div>';
+            expensesList.innerHTML = '<div class="empty-state">No hay registros cargados para este usuario.</div>';
             lblTotal.textContent = '$0.00';
             lblPaid.textContent = '$0.00';
             lblRemaining.textContent = '$0.00';
@@ -291,7 +268,7 @@
                     Restante: <b>$${remaining.toFixed(2)}</b>
                 </div>
                 <div class="actions">
-                    <button class="btn-success" onclick="togglePay('${exp.id}', ${exp.totalAmount}, ${exp.paidAmount})">${isPaid ? 'Desmarcar' : 'Pagar Total'}</button>
+                    <button class="btn-success" onclick="togglePay('${exp.id}')">${isPaid ? 'Desmarcar' : 'Pagar Total'}</button>
                     <button class="btn-danger" onclick="deleteExpense('${exp.id}')">Eliminar</button>
                 </div>
             `;
@@ -303,16 +280,24 @@
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
     }
 
-    function togglePay(id, total, currentPaid) {
-        const newPaid = currentPaid === total ? 0 : total;
-        db.collection("usuarios").doc(currentUserId).collection("gastos").doc(id).update({
-            paidAmount: newPaid
+    function togglePay(id) {
+        let expenses = JSON.parse(localStorage.getItem(getUserKey())) || [];
+        expenses = expenses.map(exp => {
+            if (exp.id === id) {
+                exp.paidAmount = (exp.paidAmount === exp.totalAmount) ? 0 : exp.totalAmount;
+            }
+            return exp;
         });
+        localStorage.setItem(getUserKey(), JSON.stringify(expenses));
+        loadExpenses();
     }
 
     function deleteExpense(id) {
         if (confirm('¿Eliminar este gasto?')) {
-            db.collection("usuarios").doc(currentUserId).collection("gastos").doc(id).delete();
+            let expenses = JSON.parse(localStorage.getItem(getUserKey())) || [];
+            expenses = expenses.filter(exp => exp.id !== id);
+            localStorage.setItem(getUserKey(), JSON.stringify(expenses));
+            loadExpenses();
         }
     }
 </script>
