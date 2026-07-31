@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Financiero - Control de Gastos</title>
+    <title>Control Financiero Sincronizado</title>
     
-    <!-- Enlace al manifiesto de la aplicación y color de tema para Android -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#6366f1">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --primary: #6366f1;
@@ -27,441 +30,257 @@
             --border: #e2e8f0;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); padding: 20px 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; }
+        
+        .hidden { display: none !important; }
 
-        body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            padding: 20px 12px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            color: var(--primary-dark);
-            font-weight: 700;
-        }
-
-        header p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Dashboard de Resumen */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
+        #auth-screen {
             background: var(--card-bg);
-            padding: 14px;
-            border-radius: 14px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            border: 1px solid var(--border);
-        }
-
-        .stat-card.full-width {
-            grid-column: span 2;
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            color: white;
-        }
-
-        .stat-card.full-width .stat-label,
-        .stat-card.full-width .stat-value {
-            color: white;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-top: 4px;
-            color: var(--text-main);
-        }
-
-        .stat-card.full-width .stat-value {
-            font-size: 1.75rem;
-        }
-
-        /* Tarjetas de Contenido */
-        .card {
-            background-color: var(--card-bg);
-            padding: 18px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            font-size: 1rem;
-            margin-bottom: 14px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-group.full {
-            grid-column: span 2;
-        }
-
-        label {
-            display: block;
-            font-size: 0.78rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--text-muted);
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            background: #fff;
-            color: var(--text-main);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-primary:active {
-            background-color: var(--primary-dark);
-        }
-
-        /* Lista de Gastos */
-        .filter-container {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 14px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-
-        .filter-btn {
-            background: #f1f5f9;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .expense-item {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-left: 5px solid var(--danger);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 10px;
-            position: relative;
-        }
-
-        .expense-item.paid {
-            border-left-color: var(--success);
-        }
-
-        .expense-item.partial {
-            border-left-color: var(--warning);
-        }
-
-        .expense-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
-        }
-
-        .expense-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-        }
-
-        .expense-category {
-            font-size: 0.7rem;
-            background: #f1f5f9;
-            padding: 2px 8px;
-            border-radius: 6px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .expense-body {
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        .expense-body b {
-            color: var(--text-main);
-        }
-
-        .actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .actions button {
-            flex: 1;
-            padding: 7px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: white;
-        }
-
-        .btn-success { background-color: var(--success); }
-        .btn-warning { background-color: var(--warning); }
-        .btn-danger { background-color: #ef4444; }
-        .btn-secondary { background-color: #cbd5e1; color: var(--text-main); }
-
-        .empty-state {
-            text-align: center;
             padding: 24px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+            margin-top: 40px;
         }
+        #auth-screen h2 { margin-bottom: 16px; color: var(--primary-dark); }
+
+        header { text-align: center; margin-bottom: 24px; }
+        header h1 { font-size: 1.5rem; color: var(--primary-dark); font-weight: 700; }
+        
+        .user-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px; font-size: 0.85rem; }
+        .user-bar button { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: 600; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 14px; border-radius: 14px; border: 1px solid var(--border); }
+        .stat-card.full-width { grid-column: span 2; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .stat-card.full-width .stat-label { color: white; opacity: 0.9; }
+        .stat-value { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
+        .stat-card.full-width .stat-value { font-size: 1.75rem; }
+
+        .card { background-color: var(--card-bg); padding: 18px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .card h3 { font-size: 1rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group.full { grid-column: span 2; }
+        label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; outline: none; }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .btn-primary { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+        .btn-primary:active { background-color: var(--primary-dark); }
+
+        .expense-item { background: #fff; border: 1px solid var(--border); border-left: 5px solid var(--danger); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+        .expense-item.paid { border-left-color: var(--success); }
+        .expense-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .expense-title { font-weight: 700; font-size: 0.95rem; }
+        .expense-category { font-size: 0.7rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; color: var(--text-muted); }
+        .expense-body { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
+        .actions { display: flex; gap: 6px; }
+        .actions button { flex: 1; padding: 7px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: #ef4444; }
+        .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>Control Financiero</h1>
-        <p>Administra tus gastos, impuestos y tarjetas del mes</p>
-    </header>
-
-    <!-- Panel Resumen Financiero -->
-    <div class="dashboard-grid">
-        <div class="stat-card full-width">
-            <div class="stat-label">Total Mes Ingresado</div>
-            <div class="stat-value" id="lblTotal">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Pagado</div>
-            <div class="stat-value" id="lblPaid" style="color: var(--success);">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Restante a Pagar</div>
-            <div class="stat-value" id="lblRemaining" style="color: var(--danger);">$0.00</div>
-        </div>
-    </div>
-
-    <!-- Formulario para agregar registro -->
-    <div class="card">
-        <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto / Impuesto</h3>
-        <form id="expenseForm">
+    <!-- Pantalla de Login / Registro -->
+    <div id="auth-screen">
+        <h2>Iniciar Sesión</h2>
+        <form id="authForm">
             <div class="form-group full">
-                <label for="name">Concepto</label>
-                <input type="text" id="name" required placeholder="Ej: Tarjeta Visa, Alquiler, Luz">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="totalAmount">Monto Total ($)</label>
-                    <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category">
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Impuesto/Servicio">Impuesto/Servicio</option>
-                        <option value="Préstamo/Deuda">Préstamo/Deuda</option>
-                        <option value="Otro">Otro</option>
-                    </select>
-                </div>
+                <label for="authEmail">Correo Electrónico</label>
+                <input type="email" id="authEmail" required placeholder="tu@correo.com">
             </div>
             <div class="form-group full">
-                <label for="dueDate">Fecha de Vencimiento (Opcional)</label>
-                <input type="date" id="dueDate">
+                <label for="authPass">Contraseña</label>
+                <input type="password" id="authPass" required placeholder="******">
             </div>
-            <button type="submit" class="btn-primary">Registrar Gasto</button>
+            <button type="submit" class="btn-primary">Entrar / Registrarse</button>
         </form>
     </div>
 
-    <!-- Lista de Gastos con Filtros -->
-    <div class="card">
-        <h3><i class="fa-solid fa-list-check" style="color:var(--primary)"></i> Detalle de Mis Gastos</h3>
-        
-        <div class="filter-container">
-            <button class="filter-btn active" onclick="filterExpenses('all', this)">Todos</button>
-            <button class="filter-btn" onclick="filterExpenses('pending', this)">Pendientes</button>
-            <button class="filter-btn" onclick="filterExpenses('partial', this)">Parciales</button>
-            <button class="filter-btn" onclick="filterExpenses('paid', this)">Pagados</button>
+    <!-- Pantalla Principal de la App -->
+    <div id="app-screen" class="hidden">
+        <header>
+            <h1>Control Financiero</h1>
+            <div class="user-bar">
+                <span id="userEmailDisplay">usuario@correo.com</span>
+                <button onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="stat-card full-width">
+                <div class="stat-label">Total Mes Ingresado</div>
+                <div class="stat-value" id="lblTotal">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Pagado</div>
+                <div class="stat-value" id="lblPaid" style="color: var(--success);">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Restante a Pagar</div>
+                <div class="stat-value" id="lblRemaining" style="color: var(--danger);">$0.00</div>
+            </div>
         </div>
 
-        <div id="expensesList"></div>
+        <div class="card">
+            <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto</h3>
+            <form id="expenseForm">
+                <div class="form-group full">
+                    <label for="name">Concepto</label>
+                    <input type="text" id="name" required placeholder="Ej: Alquiler, Luz">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="totalAmount">Monto Total ($)</label>
+                        <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Categoría</label>
+                        <select id="category">
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Impuesto/Servicio">Impuesto/Servicio</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Registrar Gasto</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-list-check" style="color:var(--primary)"></i> Mis Gastos</h3>
+            <div id="expensesList"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    let expenses = JSON.parse(localStorage.getItem('expenses_v3')) || [];
-    let currentFilter = 'all';
+    // Configuración de Firebase obtenida de tu consola
+    const firebaseConfig = {
+        apiKey: "AIzaSyBCr3piEwAVZQfGD08igE3EoN9UM3CKiPo",
+        authDomain: "app-gastos-b2512.firebaseapp.com",
+        projectId: "app-gastos-b2512",
+        storageBucket: "app-gastos-b2512.appspot.com",
+        messagingSenderId: "515143192123",
+        appId: "1:515143192123:web:147897a921ba95f767161e",
+        measurementId: "G-J8CP2H2WGL"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUserId = null;
+    let unsubscribeExpenses = null;
+
+    const authScreen = document.getElementById('auth-screen');
+    const appScreen = document.getElementById('app-screen');
+    const authForm = document.getElementById('authForm');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+
+    authForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('authEmail').value;
+        const pass = document.getElementById('authPass').value;
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .catch(() => {
+                return auth.createUserWithEmailAndPassword(email, pass);
+            })
+            .catch((error) => {
+                alert("Error de autenticación: " + error.message);
+            });
+    });
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUserId = user.uid;
+            userEmailDisplay.textContent = user.email;
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            loadUserExpenses(user.uid);
+        } else {
+            currentUserId = null;
+            authScreen.classList.remove('hidden');
+            appScreen.classList.add('hidden');
+            if (unsubscribeExpenses) unsubscribeExpenses();
+        }
+    });
+
+    function logout() {
+        auth.signOut();
+    }
 
     const expenseForm = document.getElementById('expenseForm');
-    const expensesList = document.getElementById('expensesList');
-    
-    const lblTotal = document.getElementById('lblTotal');
-    const lblPaid = document.getElementById('lblPaid');
-    const lblRemaining = document.getElementById('lblRemaining');
-
-    expenseForm.addEventListener('submit', function(e) {
+    expenseForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+        if (!currentUserId) return;
+
         const name = document.getElementById('name').value;
         const totalAmount = parseFloat(document.getElementById('totalAmount').value);
         const category = document.getElementById('category').value;
-        const dueDate = document.getElementById('dueDate').value;
 
-        const newExpense = {
-            id: Date.now(),
+        db.collection("usuarios").doc(currentUserId).collection("gastos").add({
             name,
             totalAmount,
             paidAmount: 0,
             category,
-            dueDate: dueDate ? dueDate : null
-        };
-
-        expenses.push(newExpense);
-        saveAndRender();
-        expenseForm.reset();
-        document.getElementById('name').focus();
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            expenseForm.reset();
+            document.getElementById('name').focus();
+        });
     });
 
-    function saveAndRender() {
-        localStorage.setItem('expenses_v3', JSON.stringify(expenses));
-        renderDashboard();
-        renderExpenses();
+    function loadUserExpenses(uid) {
+        const expensesList = document.getElementById('expensesList');
+        const lblTotal = document.getElementById('lblTotal');
+        const lblPaid = document.getElementById('lblPaid');
+        const lblRemaining = document.getElementById('lblRemaining');
+
+        unsubscribeExpenses = db.collection("usuarios").doc(uid).collection("gastos")
+            .orderBy('createdAt', 'desc')
+            .onSnapshot((snapshot) => {
+                let expenses = [];
+                snapshot.forEach(doc => {
+                    expenses.push({ id: doc.id, ...doc.data() });
+                });
+
+                renderApp(expenses);
+            });
     }
 
-    function renderDashboard() {
+    function renderApp(expenses) {
+        const expensesList = document.getElementById('expensesList');
+        expensesList.innerHTML = '';
+
         let total = 0;
         let paid = 0;
+
+        if (expenses.length === 0) {
+            expensesList.innerHTML = '<div class="empty-state">No hay registros cargados.</div>';
+            lblTotal.textContent = '$0.00';
+            lblPaid.textContent = '$0.00';
+            lblRemaining.textContent = '$0.00';
+            return;
+        }
 
         expenses.forEach(exp => {
             total += exp.totalAmount;
             paid += exp.paidAmount;
-        });
-
-        const remaining = total - paid;
-
-        lblTotal.textContent = `$${total.toFixed(2)}`;
-        lblPaid.textContent = `$${paid.toFixed(2)}`;
-        lblRemaining.textContent = `$${remaining.toFixed(2)}`;
-    }
-
-    function filterExpenses(status, btn) {
-        currentFilter = status;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderExpenses();
-    }
-
-    function renderExpenses() {
-        expensesList.innerHTML = '';
-
-        let filtered = expenses.filter(exp => {
-            const rem = exp.totalAmount - exp.paidAmount;
-            if (currentFilter === 'pending') return exp.paidAmount === 0;
-            if (currentFilter === 'partial') return exp.paidAmount > 0 && rem > 0.01;
-            if (currentFilter === 'paid') return rem <= 0.01;
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            expensesList.innerHTML = '<div class="empty-state">No hay registros en esta sección.</div>';
-            return;
-        }
-
-        filtered.forEach(exp => {
             const remaining = exp.totalAmount - exp.paidAmount;
-            let statusClass = 'pending';
-            let statusText = 'Pendiente';
-
-            if (remaining <= 0.01) {
-                statusClass = 'paid';
-                statusText = 'Pagado Completo';
-            } else if (exp.paidAmount > 0) {
-                statusClass = 'partial';
-                statusText = 'Pago Parcial';
-            }
-
-            // Formatear la fecha opcional si existe
-            let dueDateHTML = '';
-            if (exp.dueDate) {
-                // Formato de fecha YYYY-MM-DD a legible DD/MM/YYYY
-                const parts = exp.dueDate.split('-');
-                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                dueDateHTML = `<br>Vence: <b>${formattedDate}</b>`;
-            }
+            const isPaid = remaining <= 0.01;
 
             const div = document.createElement('div');
-            div.className = `expense-item ${statusClass}`;
+            div.className = `expense-item ${isPaid ? 'paid' : ''}`;
             div.innerHTML = `
                 <div class="expense-header">
                     <span class="expense-title">${exp.name}</span>
@@ -469,71 +288,33 @@
                 </div>
                 <div class="expense-body">
                     Total: <b>$${exp.totalAmount.toFixed(2)}</b> | Pagado: <b>$${exp.paidAmount.toFixed(2)}</b><br>
-                    Restante: <b>$${remaining.toFixed(2)}</b> (${statusText})${dueDateHTML}
+                    Restante: <b>$${remaining.toFixed(2)}</b>
                 </div>
                 <div class="actions">
-                    <button class="btn-success" onclick="markAsPaid(${exp.id})" title="Marcar total pagado">Pagar Total</button>
-                    <button class="btn-warning" onclick="payPartial(${exp.id})" title="Registrar pago parcial">Parcial</button>
-                    <button class="btn-secondary" onclick="resetPayment(${exp.id})" title="Reiniciar pagos">Limpiar</button>
-                    <button class="btn-danger" onclick="deleteExpense(${exp.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-success" onclick="togglePay('${exp.id}', ${exp.totalAmount}, ${exp.paidAmount})">${isPaid ? 'Desmarcar' : 'Pagar Total'}</button>
+                    <button class="btn-danger" onclick="deleteExpense('${exp.id}')">Eliminar</button>
                 </div>
             `;
             expensesList.appendChild(div);
         });
+
+        lblTotal.textContent = `$${total.toFixed(2)}`;
+        lblPaid.textContent = `$${paid.toFixed(2)}`;
+        lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
     }
 
-    function markAsPaid(id) {
-        expenses = expenses.map(exp => {
-            if (exp.id === id) exp.paidAmount = exp.totalAmount;
-            return exp;
+    function togglePay(id, total, currentPaid) {
+        const newPaid = currentPaid === total ? 0 : total;
+        db.collection("usuarios").doc(currentUserId).collection("gastos").doc(id).update({
+            paidAmount: newPaid
         });
-        saveAndRender();
-    }
-
-    function payPartial(id) {
-        const exp = expenses.find(e => e.id === id);
-        const rem = exp.totalAmount - exp.paidAmount;
-        const input = prompt(`¿Cuánto pagaste de "${exp.name}"?\n(Restante actual: $${rem.toFixed(2)}):`);
-        
-        if (input !== null && input.trim() !== '' && !isNaN(input)) {
-            const amount = parseFloat(input);
-            if (amount > 0) {
-                exp.paidAmount += amount;
-                if (exp.paidAmount > exp.totalAmount) {
-                    exp.paidAmount = exp.totalAmount;
-                }
-                saveAndRender();
-            }
-        }
-    }
-
-    function resetPayment(id) {
-        expenses = expenses.map(exp => {
-            if (exp.id === id) exp.paidAmount = 0;
-            return exp;
-        });
-        saveAndRender();
     }
 
     function deleteExpense(id) {
-        if (confirm('¿Estás seguro de eliminar este gasto?')) {
-            expenses = expenses.filter(exp => exp.id !== id);
-            saveAndRender();
+        if (confirm('¿Eliminar este gasto?')) {
+            db.collection("usuarios").doc(currentUserId).collection("gastos").doc(id).delete();
         }
     }
-
-    // Registro del Service Worker para cumplir con los estándares de PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
-                .catch(err => console.log('Error al registrar el Service Worker:', err));
-        });
-    }
-
-    // Inicializar app
-    renderDashboard();
-    renderExpenses();
 </script>
 
 </body>
