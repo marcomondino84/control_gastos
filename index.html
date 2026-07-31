@@ -163,7 +163,6 @@
     const authForm = document.getElementById('authForm');
     const userEmailDisplay = document.getElementById('userEmailDisplay');
 
-    // Comprobar si ya había una sesión abierta en este dispositivo
     const savedUser = localStorage.getItem('current_user');
     if (savedUser) {
         loginUser(savedUser);
@@ -173,7 +172,6 @@
         e.preventDefault();
         const username = document.getElementById('authEmail').value.trim().toLowerCase();
         
-        // Guardamos la sesión activa en el navegador
         localStorage.setItem('current_user', username);
         loginUser(username);
     });
@@ -194,7 +192,6 @@
         document.getElementById('authForm').reset();
     }
 
-    // Obtener la clave única de almacenamiento para este usuario específico
     function getUserKey() {
         return 'expenses_' + currentUser;
     }
