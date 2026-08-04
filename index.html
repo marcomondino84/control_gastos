@@ -47,8 +47,11 @@
         .form-group { margin-bottom: 12px; }
         .form-group.full { grid-column: span 2; }
         label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
-        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; outline: none; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; outline: none; background: #fff; }
         input:focus, select:focus { border-color: var(--primary); }
+
+        /* Clase esencial para ocultar los campos de tarjeta por defecto */
+        .hidden { display: none !important; }
 
         .btn-primary { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
         .btn-primary:active { background-color: var(--primary-dark); }
@@ -68,7 +71,6 @@
         .btn-danger { background-color: var(--danger); }
         .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
 
-        /* Sección de Estadísticas y Calculadora */
         .stats-box { font-size: 0.85rem; color: var(--text-muted); }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
     </style>
@@ -128,7 +130,7 @@
                 </div>
             </div>
 
-            <!-- Campos exclusivos para Tarjetas -->
+            <!-- Campos exclusivos para Tarjetas (Ocultos por defecto) -->
             <div id="cardFields" class="hidden">
                 <div class="form-row">
                     <div class="form-group">
@@ -153,7 +155,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'expenses_v2_advanced';
+    const STORAGE_KEY = 'expenses_v3_advanced';
 
     function toggleCardFields() {
         const category = document.getElementById('category').value;
