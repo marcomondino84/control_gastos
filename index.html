@@ -32,9 +32,9 @@
         header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.5rem; color: var(--primary-dark); font-weight: 700; }
 
-        /* Sistema de pestañas de navegación */
+        /* Pestañas de navegación visibles */
         .nav-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 4px; border-radius: 12px; }
-        .nav-btn { padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 700; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+        .nav-btn { padding: 12px; text-align: center; font-size: 0.85rem; font-weight: 700; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
         .nav-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .view-section { display: none; }
@@ -71,13 +71,13 @@
         .expense-category { font-size: 0.7rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; color: var(--text-muted); }
         .expense-body { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
         
-        .actions { display: flex; gap: 6px; margin-top: 8px; }
-        .actions button { flex: 1; padding: 7px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+        .actions button { padding: 7px 4px; font-size: 0.7rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; color: white; text-align: center; }
         .btn-success { background-color: var(--success); }
         .btn-warning { background-color: var(--warning); }
+        .btn-info { background-color: #3b82f6; }
         .btn-danger { background-color: var(--danger); }
         
-        /* Estilos visuales para estadísticas y calculadora */
         .stat-bar-container { margin-bottom: 12px; }
         .stat-bar-info { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
         .stat-bar-bg { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
@@ -94,7 +94,7 @@
         <h1>Control de Gastos</h1>
     </header>
 
-    <!-- Navegación entre vistas -->
+    <!-- Pestañas de navegación -->
     <div class="nav-tabs">
         <button class="nav-btn active" onclick="switchView('gastos', this)"><i class="fa-solid fa-wallet"></i> Mis Gastos</button>
         <button class="nav-btn" onclick="switchView('estadisticas', this)"><i class="fa-solid fa-chart-pie"></i> Estadísticas y Utilidades</button>
@@ -142,7 +142,7 @@
                     </div>
                 </div>
 
-                <!-- Campos exclusivos para Tarjetas (Ocultos por defecto) -->
+                <!-- Campos exclusivos para Tarjetas -->
                 <div id="cardFields" class="hidden">
                     <div class="form-row">
                         <div class="form-group">
@@ -195,7 +195,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'expenses_v4_pro';
+    const STORAGE_KEY = 'expenses_v5_pro';
 
     function switchView(viewName, btn) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -295,10 +295,10 @@
 
             if (exp.paidAmount >= exp.totalAmount) {
                 statusClass = 'paid';
-                payButtonText = 'Desmarcar';
+                payButtonText = 'Revertir Pago';
             } else if (exp.paidAmount > 0) {
                 statusClass = 'partial';
-                payButtonText = 'Completar Pago';
+                payButtonText = 'Completar';
             }
 
             let cardExtraInfo = '';
@@ -320,7 +320,7 @@
                 </div>
                 <div class="actions">
                     <button class="btn-success" onclick="togglePay('${exp.id}')">${payButtonText}</button>
-                    ${exp.category === 'Tarjetas' ? `<button class="btn-warning" onclick="payMin('${exp.id}')">Pagar Mín.</button>` : ''}
+                    <button class="btn-info" onclick="editExpense('${exp.id}')">Editar</button>
                     <button class="btn-danger" onclick="deleteExpense('${exp.id}')">Eliminar</button>
                 </div>
             `;
@@ -331,7 +331,7 @@
         lblPaid.textContent = `$${paid.toFixed(2)}`;
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
 
-        // Renderizar gráficos de barras visuales en la pestaña de estadísticas
+        // Renderizar estadísticas
         statsBarsContainer.innerHTML = '';
         for (let cat in catTotals) {
             let catSum = catTotals[cat];
@@ -356,19 +356,12 @@
         }
     }
 
-    function calculateSplit() {
-        const amount = parseFloat(document.getElementById('calcAmount').value) || 0;
-        const parts = parseInt(document.getElementById('calcParts').value) || 1;
-        const result = parts > 0 ? amount / parts : 0;
-        document.getElementById('calcResult').textContent = `$${result.toFixed(2)}`;
-    }
-
     function togglePay(id) {
         let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         expenses = expenses.map(exp => {
             if (exp.id === id) {
-                if (exp.paidAmount >= exp.totalAmount) {
-                    exp.paidAmount = 0;
+                if (exp.paidAmount > 0) {
+                    exp.paidAmount = 0; // Revierte el pago por completo ante cualquier error
                 } else {
                     exp.paidAmount = exp.totalAmount;
                 }
@@ -379,16 +372,44 @@
         loadExpenses();
     }
 
-    function payMin(id) {
+    function editExpense(id) {
         let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        expenses = expenses.map(exp => {
-            if (exp.id === id) {
-                exp.paidAmount = exp.minAmount;
-            }
-            return exp;
-        });
+        let exp = expenses.find(item => item.id === id);
+        if (!exp) return;
+
+        let newName = prompt('Editar Concepto:', exp.name);
+        if (newName === null) return;
+
+        let newTotal = prompt('Editar Monto Total ($):', exp.totalAmount);
+        if (newTotal === null) return;
+
+        let parsedTotal = parseFloat(newTotal);
+        if (isNaN(parsedTotal) || parsedTotal <= 0) {
+            alert('Monto inválido.');
+            return;
+        }
+
+        let newPaid = prompt('Editar Monto Pagado ($):', exp.paidAmount);
+        if (newPaid === null) return;
+
+        let parsedPaid = parseFloat(newPaid);
+        if (isNaN(parsedPaid) || parsedPaid < 0) {
+            parsedPaid = 0;
+        }
+
+        exp.name = newName.trim() || exp.name;
+        exp.totalAmount = parsedTotal;
+        exp.paidAmount = Math.min(parsedPaid, parsedTotal);
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
         loadExpenses();
+    }
+
+    function calculateSplit() {
+        const amount = parseFloat(document.getElementById('calcAmount').value) || 0;
+        const parts = parseInt(document.getElementById('calcParts').value) || 1;
+        const result = parts > 0 ? amount / parts : 0;
+        document.getElementById('calcResult').textContent = `$${result.toFixed(2)}`;
     }
 
     function deleteExpense(id) {
