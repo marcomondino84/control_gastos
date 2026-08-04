@@ -142,7 +142,6 @@
                     </div>
                 </div>
 
-                <!-- Campo exclusivo para ingresar monto inicial a abonar en Tarjetas -->
                 <div id="cardFields" class="hidden">
                     <div class="form-group full">
                         <label for="initialPaidAmount">Monto Inicial a Abonar ($)</label>
@@ -163,14 +162,22 @@
     <!-- VISTA 2: ESTADÍSTICAS Y PANEL PRO -->
     <div id="view-estadisticas" class="view-section">
         <div class="card">
+            <h3><i class="fa-solid fa-wallet" style="color:var(--primary)"></i> Configuración de Ingresos</h3>
+            <div class="form-group">
+                <label for="incomeInput">Tu Ingreso Mensual Total ($)</label>
+                <input type="number" step="0.01" id="incomeInput" placeholder="Ej: 500000" oninput="saveIncome()">
+            </div>
+        </div>
+
+        <div class="card">
             <h3><i class="fa-solid fa-chart-line" style="color:var(--primary)"></i> Análisis de Salud Financiera</h3>
             <div class="pro-metric-box">
-                <div class="pro-metric-title">Eficiencia de Pago (Pagado vs Total)</div>
-                <div class="pro-metric-val" id="proEfficiency">0%</div>
+                <div class="pro-metric-title">Balance Disponible (Ingresos - Gastos Totales)</div>
+                <div class="pro-metric-val" id="proBalance">$0.00</div>
             </div>
             <div class="pro-metric-box">
-                <div class="pro-metric-title">Presupuesto Diario Sugerido (Restante / 30 días)</div>
-                <div class="pro-metric-val" id="proDailyBudget">$0.00 / día</div>
+                <div class="pro-metric-title">Capacidad de Ahorro / Impacto de Gastos</div>
+                <div class="pro-metric-val" id="proImpact">0% de tus ingresos comprometidos</div>
             </div>
         </div>
 
@@ -184,7 +191,8 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'expenses_v7_pro';
+    const STORAGE_KEY = 'expenses_v8_pro';
+    const INCOME_KEY = 'monthly_income_v8';
 
     function switchView(viewName, btn) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -192,6 +200,10 @@
         
         document.getElementById('view-' + viewName).classList.add('active');
         btn.classList.add('active');
+        
+        if(viewName === 'estadisticas') {
+            loadIncomeToInput();
+        }
     }
 
     function toggleCardFields() {
@@ -203,6 +215,17 @@
             cardFields.classList.add('hidden');
             document.getElementById('initialPaidAmount').value = '';
         }
+    }
+
+    function saveIncome() {
+        const income = parseFloat(document.getElementById('incomeInput').value) || 0;
+        localStorage.setItem(INCOME_KEY, income);
+        loadExpenses();
+    }
+
+    function loadIncomeToInput() {
+        const savedIncome = localStorage.getItem(INCOME_KEY) || '';
+        document.getElementById('incomeInput').value = savedIncome;
     }
 
     const expenseForm = document.getElementById('expenseForm');
@@ -251,8 +274,8 @@
         const lblPaid = document.getElementById('lblPaid');
         const lblRemaining = document.getElementById('lblRemaining');
         const statsBarsContainer = document.getElementById('statsBarsContainer');
-        const proEfficiency = document.getElementById('proEfficiency');
-        const proDailyBudget = document.getElementById('proDailyBudget');
+        const proBalance = document.getElementById('proBalance');
+        const proImpact = document.getElementById('proImpact');
 
         expensesList.innerHTML = '';
 
@@ -266,9 +289,6 @@
             lblTotal.textContent = '$0.00';
             lblPaid.textContent = '$0.00';
             lblRemaining.textContent = '$0.00';
-            proEfficiency.textContent = '0%';
-            proDailyBudget.textContent = '$0.00 / día';
-            return;
         }
 
         expenses.forEach(exp => {
@@ -314,11 +334,14 @@
         lblPaid.textContent = `$${paid.toFixed(2)}`;
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
 
-        let efficiency = total > 0 ? (paid / total) * 100 : 0;
-        proEfficiency.textContent = `${efficiency.toFixed(1)}% completado`;
-        
-        let daily = (total - paid) / 30;
-        proDailyBudget.textContent = `$${daily.toFixed(2)} / día (estimado 30d)`;
+        // Cálculos Pro con Ingresos
+        const monthlyIncome = parseFloat(localStorage.getItem(INCOME_KEY)) || 0;
+        const balance = monthlyIncome - total;
+        proBalance.textContent = `$${balance.toFixed(2)}`;
+        proBalance.style.color = balance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+        const impact = monthlyIncome > 0 ? (total / monthlyIncome) * 100 : 0;
+        proImpact.textContent = `${impact.toFixed(1)}% de tus ingresos comprometidos`;
 
         statsBarsContainer.innerHTML = '';
         for (let cat in catTotals) {
@@ -357,6 +380,7 @@
         loadExpenses();
     }
 
+    // Edición corregida y robusta para descripción, total y pagado
     function editExpense(id) {
         let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let exp = expenses.find(item => item.id === id);
@@ -374,7 +398,7 @@
             return;
         }
 
-        let newPaid = prompt('Editar Monto Pagado ($):', exp.paidAmount);
+        let newPaid = prompt('Editar Monto ya Pagado ($):', exp.paidAmount);
         if (newPaid === null) return;
 
         let parsedPaid = parseFloat(newPaid);
