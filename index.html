@@ -32,7 +32,6 @@
         header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.5rem; color: var(--primary-dark); font-weight: 700; }
 
-        /* Pestañas de navegación visibles */
         .nav-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 4px; border-radius: 12px; }
         .nav-btn { padding: 12px; text-align: center; font-size: 0.85rem; font-weight: 700; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
         .nav-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -78,12 +77,16 @@
         .btn-info { background-color: #3b82f6; }
         .btn-danger { background-color: var(--danger); }
         
-        .stat-bar-container { margin-bottom: 12px; }
+        /* Estilos Pro para Estadísticas */
+        .stat-bar-container { margin-bottom: 14px; }
         .stat-bar-info { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
         .stat-bar-bg { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
         .stat-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s ease; }
 
-        .calc-box { background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border); }
+        .pro-metric-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .pro-metric-title { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .pro-metric-val { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
+
         .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
 </head>
@@ -94,10 +97,9 @@
         <h1>Control de Gastos</h1>
     </header>
 
-    <!-- Pestañas de navegación -->
     <div class="nav-tabs">
         <button class="nav-btn active" onclick="switchView('gastos', this)"><i class="fa-solid fa-wallet"></i> Mis Gastos</button>
-        <button class="nav-btn" onclick="switchView('estadisticas', this)"><i class="fa-solid fa-chart-pie"></i> Estadísticas y Utilidades</button>
+        <button class="nav-btn" onclick="switchView('estadisticas', this)"><i class="fa-solid fa-chart-pie"></i> Estadísticas y Pro</button>
     </div>
 
     <!-- VISTA 1: GESTIÓN DE GASTOS -->
@@ -142,7 +144,6 @@
                     </div>
                 </div>
 
-                <!-- Campos exclusivos para Tarjetas -->
                 <div id="cardFields" class="hidden">
                     <div class="form-row">
                         <div class="form-group">
@@ -166,36 +167,31 @@
         </div>
     </div>
 
-    <!-- VISTA 2: ESTADÍSTICAS Y HERRAMIENTAS -->
+    <!-- VISTA 2: ESTADÍSTICAS Y PANEL PRO -->
     <div id="view-estadisticas" class="view-section">
         <div class="card">
-            <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary)"></i> Distribución por Categoría</h3>
-            <div id="statsBarsContainer">
-                <div class="empty-state">Sin datos suficientes para graficar.</div>
+            <h3><i class="fa-solid fa-chart-line" style="color:var(--primary)"></i> Análisis de Salud Financiera</h3>
+            <div class="pro-metric-box">
+                <div class="pro-metric-title">Eficiencia de Pago (Pagado vs Total)</div>
+                <div class="pro-metric-val" id="proEfficiency">0%</div>
+            </div>
+            <div class="pro-metric-box">
+                <div class="pro-metric-title">Presupuesto Diario Sugerido (Restante / 30 días)</div>
+                <div class="pro-metric-val" id="proDailyBudget">$0.00 / día</div>
             </div>
         </div>
 
         <div class="card">
-            <h3><i class="fa-solid fa-calculator" style="color:var(--primary)"></i> Calculadora de Proporción / Cuotas</h3>
-            <div class="calc-box">
-                <div class="form-group">
-                    <label for="calcAmount">Monto Total a Dividir ($)</label>
-                    <input type="number" id="calcAmount" placeholder="0.00" oninput="calculateSplit()">
-                </div>
-                <div class="form-group">
-                    <label for="calcParts">Cantidad de partes / cuotas</label>
-                    <input type="number" id="calcParts" value="1" min="1" oninput="calculateSplit()">
-                </div>
-                <div style="margin-top: 10px; font-size: 0.9rem; font-weight: 600; color: var(--primary-dark);">
-                    Resultado por cuota: <span id="calcResult">$0.00</span>
-                </div>
+            <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary)"></i> Distribución de Gastos por Categoría</h3>
+            <div id="statsBarsContainer">
+                <div class="empty-state">Sin datos suficientes para graficar.</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'expenses_v5_pro';
+    const STORAGE_KEY = 'expenses_v6_pro';
 
     function switchView(viewName, btn) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -266,6 +262,8 @@
         const lblPaid = document.getElementById('lblPaid');
         const lblRemaining = document.getElementById('lblRemaining');
         const statsBarsContainer = document.getElementById('statsBarsContainer');
+        const proEfficiency = document.getElementById('proEfficiency');
+        const proDailyBudget = document.getElementById('proDailyBudget');
 
         expensesList.innerHTML = '';
 
@@ -279,6 +277,8 @@
             lblTotal.textContent = '$0.00';
             lblPaid.textContent = '$0.00';
             lblRemaining.textContent = '$0.00';
+            proEfficiency.textContent = '0%';
+            proDailyBudget.textContent = '$0.00 / día';
             return;
         }
 
@@ -295,7 +295,7 @@
 
             if (exp.paidAmount >= exp.totalAmount) {
                 statusClass = 'paid';
-                payButtonText = 'Revertir Pago';
+                payButtonText = 'Revertir';
             } else if (exp.paidAmount > 0) {
                 statusClass = 'partial';
                 payButtonText = 'Completar';
@@ -331,7 +331,14 @@
         lblPaid.textContent = `$${paid.toFixed(2)}`;
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
 
-        // Renderizar estadísticas
+        // Actualizar métricas PRO
+        let efficiency = total > 0 ? (paid / total) * 100 : 0;
+        proEfficiency.textContent = `${efficiency.toFixed(1)}% completado`;
+        
+        let daily = (total - paid) / 30;
+        proDailyBudget.textContent = `$${daily.toFixed(2)} / día (estimado 30d)`;
+
+        // Renderizar estadísticas de barras
         statsBarsContainer.innerHTML = '';
         for (let cat in catTotals) {
             let catSum = catTotals[cat];
@@ -351,9 +358,6 @@
                 statsBarsContainer.appendChild(barWrapper);
             }
         }
-        if (statsBarsContainer.innerHTML === '') {
-            statsBarsContainer.innerHTML = '<div class="empty-state">Sin gastos asignados en categorías.</div>';
-        }
     }
 
     function togglePay(id) {
@@ -361,7 +365,7 @@
         expenses = expenses.map(exp => {
             if (exp.id === id) {
                 if (exp.paidAmount > 0) {
-                    exp.paidAmount = 0; // Revierte el pago por completo ante cualquier error
+                    exp.paidAmount = 0;
                 } else {
                     exp.paidAmount = exp.totalAmount;
                 }
@@ -385,7 +389,7 @@
 
         let parsedTotal = parseFloat(newTotal);
         if (isNaN(parsedTotal) || parsedTotal <= 0) {
-            alert('Monto inválido.');
+            alert('Monto total inválido.');
             return;
         }
 
@@ -403,13 +407,6 @@
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
         loadExpenses();
-    }
-
-    function calculateSplit() {
-        const amount = parseFloat(document.getElementById('calcAmount').value) || 0;
-        const parts = parseInt(document.getElementById('calcParts').value) || 1;
-        const result = parts > 0 ? amount / parts : 0;
-        document.getElementById('calcResult').textContent = `$${result.toFixed(2)}`;
     }
 
     function deleteExpense(id) {
