@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Gastos</title>
+    <title>Control de Gastos Avanzado</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#6366f1">
@@ -16,6 +16,7 @@
             --primary: #6366f1;
             --primary-dark: #4f46e5;
             --success: #10b981;
+            --warning: #f59e0b;
             --danger: #ef4444;
             --bg: #f8fafc;
             --card-bg: #ffffff;
@@ -54,15 +55,22 @@
 
         .expense-item { background: #fff; border: 1px solid var(--border); border-left: 5px solid var(--danger); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
         .expense-item.paid { border-left-color: var(--success); }
+        .expense-item.partial { border-left-color: var(--warning); }
         .expense-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
         .expense-title { font-weight: 700; font-size: 0.95rem; }
         .expense-category { font-size: 0.7rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; color: var(--text-muted); }
-        .expense-body { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
-        .actions { display: flex; gap: 6px; }
+        .expense-body { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+        
+        .actions { display: flex; gap: 6px; margin-top: 8px; }
         .actions button { flex: 1; padding: 7px; font-size: 0.75rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; color: white; }
         .btn-success { background-color: var(--success); }
-        .btn-danger { background-color: #ef4444; }
+        .btn-warning { background-color: var(--warning); }
+        .btn-danger { background-color: var(--danger); }
         .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
+
+        /* Sección de Estadísticas y Calculadora */
+        .stats-box { font-size: 0.85rem; color: var(--text-muted); }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -87,27 +95,53 @@
         </div>
     </div>
 
+    <!-- Panel de Estadísticas y Resumen por Categoría -->
+    <div class="card">
+        <h3><i class="fa-solid fa-chart-pie" style="color:var(--primary)"></i> Resumen por Categoría</h3>
+        <div id="statsContainer" class="stats-box">
+            <div class="empty-state">Sin datos para calcular.</div>
+        </div>
+    </div>
+
     <div class="card">
         <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto</h3>
         <form id="expenseForm">
             <div class="form-group full">
                 <label for="name">Concepto</label>
-                <input type="text" id="name" required placeholder="Ej: Alquiler, Luz">
+                <input type="text" id="name" required placeholder="Ej: Alquiler, Visa, Supermercado">
             </div>
+            
             <div class="form-row">
+                <div class="form-group">
+                    <label for="category">Categoría</label>
+                    <select id="category" onchange="toggleCardFields()">
+                        <option value="Alquiler">Alquiler</option>
+                        <option value="Impuesto">Impuesto</option>
+                        <option value="Creditos">Creditos</option>
+                        <option value="Tarjetas">Tarjetas</option>
+                        <option value="Otros" selected>Otros</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="totalAmount">Monto Total ($)</label>
                     <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
                 </div>
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category">
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Impuesto/Servicio">Impuesto/Servicio</option>
-                        <option value="Otro">Otro</option>
-                    </select>
+            </div>
+
+            <!-- Campos exclusivos para Tarjetas -->
+            <div id="cardFields" class="hidden">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="minAmount">Pago Mínimo ($)</label>
+                        <input type="number" step="0.01" id="minAmount" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="customPayAmount">Monto a Abonar ($)</label>
+                        <input type="number" step="0.01" id="customPayAmount" placeholder="0.00">
+                    </div>
                 </div>
             </div>
+
             <button type="submit" class="btn-primary">Registrar Gasto</button>
         </form>
     </div>
@@ -119,22 +153,46 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'local_expenses_v1';
+    const STORAGE_KEY = 'expenses_v2_advanced';
+
+    function toggleCardFields() {
+        const category = document.getElementById('category').value;
+        const cardFields = document.getElementById('cardFields');
+        if (category === 'Tarjetas') {
+            cardFields.classList.remove('hidden');
+        } else {
+            cardFields.classList.add('hidden');
+            document.getElementById('minAmount').value = '';
+            document.getElementById('customPayAmount').value = '';
+        }
+    }
 
     const expenseForm = document.getElementById('expenseForm');
     expenseForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
         const name = document.getElementById('name').value;
-        const totalAmount = parseFloat(document.getElementById('totalAmount').value);
         const category = document.getElementById('category').value;
+        const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+        
+        let minAmount = 0;
+        let paidAmount = 0;
+
+        if (category === 'Tarjetas') {
+            minAmount = parseFloat(document.getElementById('minAmount').value) || 0;
+            const customPay = parseFloat(document.getElementById('customPayAmount').value);
+            if (!isNaN(customPay)) {
+                paidAmount = customPay;
+            }
+        }
 
         const newExpense = {
             id: Date.now().toString(),
             name,
+            category,
             totalAmount,
-            paidAmount: 0,
-            category
+            minAmount,
+            paidAmount
         };
 
         let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -142,6 +200,7 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
 
         expenseForm.reset();
+        toggleCardFields();
         document.getElementById('name').focus();
         loadExpenses();
     });
@@ -156,14 +215,17 @@
         const lblTotal = document.getElementById('lblTotal');
         const lblPaid = document.getElementById('lblPaid');
         const lblRemaining = document.getElementById('lblRemaining');
+        const statsContainer = document.getElementById('statsContainer');
 
         expensesList.innerHTML = '';
 
         let total = 0;
         let paid = 0;
+        let catTotals = { Alquiler: 0, Impuesto: 0, Creditos: 0, Tarjetas: 0, Otros: 0 };
 
         if (expenses.length === 0) {
             expensesList.innerHTML = '<div class="empty-state">No hay registros cargados.</div>';
+            statsContainer.innerHTML = '<div class="empty-state">Sin datos para calcular.</div>';
             lblTotal.textContent = '$0.00';
             lblPaid.textContent = '$0.00';
             lblRemaining.textContent = '$0.00';
@@ -173,22 +235,42 @@
         expenses.forEach(exp => {
             total += exp.totalAmount;
             paid += exp.paidAmount;
+            if (catTotals[exp.category] !== undefined) {
+                catTotals[exp.category] += exp.totalAmount;
+            }
+
             const remaining = exp.totalAmount - exp.paidAmount;
-            const isPaid = remaining <= 0.01;
+            let statusClass = '';
+            let payButtonText = 'Pagar Total';
+
+            if (exp.paidAmount >= exp.totalAmount) {
+                statusClass = 'paid';
+                payButtonText = 'Desmarcar';
+            } else if (exp.paidAmount > 0) {
+                statusClass = 'partial';
+                payButtonText = 'Completar Pago';
+            }
+
+            let cardExtraInfo = '';
+            if (exp.category === 'Tarjetas') {
+                cardExtraInfo = `<br>Mínimo: <b>$${exp.minAmount.toFixed(2)}</b>`;
+            }
 
             const div = document.createElement('div');
-            div.className = `expense-item ${isPaid ? 'paid' : ''}`;
+            div.className = `expense-item ${statusClass}`;
             div.innerHTML = `
                 <div class="expense-header">
                     <span class="expense-title">${exp.name}</span>
                     <span class="expense-category">${exp.category}</span>
                 </div>
                 <div class="expense-body">
-                    Total: <b>$${exp.totalAmount.toFixed(2)}</b> | Pagado: <b>$${exp.paidAmount.toFixed(2)}</b><br>
+                    Total: <b>$${exp.totalAmount.toFixed(2)}</b> | Pagado: <b>$${exp.paidAmount.toFixed(2)}</b>
+                    ${cardExtraInfo}<br>
                     Restante: <b>$${remaining.toFixed(2)}</b>
                 </div>
                 <div class="actions">
-                    <button class="btn-success" onclick="togglePay('${exp.id}')">${isPaid ? 'Desmarcar' : 'Pagar Total'}</button>
+                    <button class="btn-success" onclick="togglePay('${exp.id}')">${payButtonText}</button>
+                    ${exp.category === 'Tarjetas' ? `<button class="btn-warning" onclick="payMin('${exp.id}')">Pagar Mín.</button>` : ''}
                     <button class="btn-danger" onclick="deleteExpense('${exp.id}')">Eliminar</button>
                 </div>
             `;
@@ -198,13 +280,43 @@
         lblTotal.textContent = `$${total.toFixed(2)}`;
         lblPaid.textContent = `$${paid.toFixed(2)}`;
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
+
+        // Renderizar estadísticas por categoría
+        statsContainer.innerHTML = '';
+        for (let cat in catTotals) {
+            if (catTotals[cat] > 0) {
+                const row = document.createElement('div');
+                row.className = 'stat-row';
+                row.innerHTML = `<span><b>${cat}:</b></span> <span>$${catTotals[cat].toFixed(2)}</span>`;
+                statsContainer.appendChild(row);
+            }
+        }
+        if (statsContainer.innerHTML === '') {
+            statsContainer.innerHTML = '<div class="empty-state">Sin gastos asignados en categorías.</div>';
+        }
     }
 
     function togglePay(id) {
         let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         expenses = expenses.map(exp => {
             if (exp.id === id) {
-                exp.paidAmount = (exp.paidAmount === exp.totalAmount) ? 0 : exp.totalAmount;
+                if (exp.paidAmount >= exp.totalAmount) {
+                    exp.paidAmount = 0;
+                } else {
+                    exp.paidAmount = exp.totalAmount;
+                }
+            }
+            return exp;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+        loadExpenses();
+    }
+
+    function payMin(id) {
+        let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        expenses = expenses.map(exp => {
+            if (exp.id === id) {
+                exp.paidAmount = exp.minAmount;
             }
             return exp;
         });
