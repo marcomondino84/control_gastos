@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Gastos Avanzado</title>
+    <title>Control de Gastos Profesional</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#6366f1">
@@ -26,11 +26,19 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg); color: var(--text-main); padding: 20px 12px; display: flex; justify-content: center; }
+        body { background-color: var(--bg); color: var(--text-main); padding: 20px 12px 80px 12px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; }
 
-        header { text-align: center; margin-bottom: 24px; }
+        header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.5rem; color: var(--primary-dark); font-weight: 700; }
+
+        /* Sistema de pestañas de navegación */
+        .nav-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 4px; border-radius: 12px; }
+        .nav-btn { padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 700; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+        .nav-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
 
         .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 14px; border-radius: 14px; border: 1px solid var(--border); }
@@ -50,7 +58,6 @@
         input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; outline: none; background: #fff; }
         input:focus, select:focus { border-color: var(--primary); }
 
-        /* Clase esencial para ocultar los campos de tarjeta por defecto */
         .hidden { display: none !important; }
 
         .btn-primary { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
@@ -69,10 +76,15 @@
         .btn-success { background-color: var(--success); }
         .btn-warning { background-color: var(--warning); }
         .btn-danger { background-color: var(--danger); }
-        .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
+        
+        /* Estilos visuales para estadísticas y calculadora */
+        .stat-bar-container { margin-bottom: 12px; }
+        .stat-bar-info { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        .stat-bar-bg { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s ease; }
 
-        .stats-box { font-size: 0.85rem; color: var(--text-muted); }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+        .calc-box { background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid var(--border); }
+        .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -82,80 +94,116 @@
         <h1>Control de Gastos</h1>
     </header>
 
-    <div class="dashboard-grid">
-        <div class="stat-card full-width">
-            <div class="stat-label">Total Mes Ingresado</div>
-            <div class="stat-value" id="lblTotal">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Pagado</div>
-            <div class="stat-value" id="lblPaid" style="color: var(--success);">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Restante a Pagar</div>
-            <div class="stat-value" id="lblRemaining" style="color: var(--danger);">$0.00</div>
-        </div>
+    <!-- Navegación entre vistas -->
+    <div class="nav-tabs">
+        <button class="nav-btn active" onclick="switchView('gastos', this)"><i class="fa-solid fa-wallet"></i> Mis Gastos</button>
+        <button class="nav-btn" onclick="switchView('estadisticas', this)"><i class="fa-solid fa-chart-pie"></i> Estadísticas y Utilidades</button>
     </div>
 
-    <!-- Panel de Estadísticas y Resumen por Categoría -->
-    <div class="card">
-        <h3><i class="fa-solid fa-chart-pie" style="color:var(--primary)"></i> Resumen por Categoría</h3>
-        <div id="statsContainer" class="stats-box">
-            <div class="empty-state">Sin datos para calcular.</div>
+    <!-- VISTA 1: GESTIÓN DE GASTOS -->
+    <div id="view-gastos" class="view-section active">
+        <div class="dashboard-grid">
+            <div class="stat-card full-width">
+                <div class="stat-label">Total Mes Ingresado</div>
+                <div class="stat-value" id="lblTotal">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Pagado</div>
+                <div class="stat-value" id="lblPaid" style="color: var(--success);">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Restante a Pagar</div>
+                <div class="stat-value" id="lblRemaining" style="color: var(--danger);">$0.00</div>
+            </div>
         </div>
-    </div>
 
-    <div class="card">
-        <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto</h3>
-        <form id="expenseForm">
-            <div class="form-group full">
-                <label for="name">Concepto</label>
-                <input type="text" id="name" required placeholder="Ej: Alquiler, Visa, Supermercado">
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category" onchange="toggleCardFields()">
-                        <option value="Alquiler">Alquiler</option>
-                        <option value="Impuesto">Impuesto</option>
-                        <option value="Creditos">Creditos</option>
-                        <option value="Tarjetas">Tarjetas</option>
-                        <option value="Otros" selected>Otros</option>
-                    </select>
+        <div class="card">
+            <h3><i class="fa-solid fa-circle-plus" style="color:var(--primary)"></i> Nuevo Gasto</h3>
+            <form id="expenseForm">
+                <div class="form-group full">
+                    <label for="name">Concepto</label>
+                    <input type="text" id="name" required placeholder="Ej: Alquiler, Visa, Supermercado">
                 </div>
-                <div class="form-group">
-                    <label for="totalAmount">Monto Total ($)</label>
-                    <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
-                </div>
-            </div>
-
-            <!-- Campos exclusivos para Tarjetas (Ocultos por defecto) -->
-            <div id="cardFields" class="hidden">
+                
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="minAmount">Pago Mínimo ($)</label>
-                        <input type="number" step="0.01" id="minAmount" placeholder="0.00">
+                        <label for="category">Categoría</label>
+                        <select id="category" onchange="toggleCardFields()">
+                            <option value="Alquiler">Alquiler</option>
+                            <option value="Impuesto">Impuesto</option>
+                            <option value="Creditos">Creditos</option>
+                            <option value="Tarjetas">Tarjetas</option>
+                            <option value="Otros" selected>Otros</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="customPayAmount">Monto a Abonar ($)</label>
-                        <input type="number" step="0.01" id="customPayAmount" placeholder="0.00">
+                        <label for="totalAmount">Monto Total ($)</label>
+                        <input type="number" step="0.01" id="totalAmount" required placeholder="0.00">
                     </div>
                 </div>
-            </div>
 
-            <button type="submit" class="btn-primary">Registrar Gasto</button>
-        </form>
+                <!-- Campos exclusivos para Tarjetas (Ocultos por defecto) -->
+                <div id="cardFields" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="minAmount">Pago Mínimo ($)</label>
+                            <input type="number" step="0.01" id="minAmount" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="customPayAmount">Monto a Abonar ($)</label>
+                            <input type="number" step="0.01" id="customPayAmount" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Registrar Gasto</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-list-check" style="color:var(--primary)"></i> Listado de Gastos</h3>
+            <div id="expensesList"></div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3><i class="fa-solid fa-list-check" style="color:var(--primary)"></i> Mis Gastos</h3>
-        <div id="expensesList"></div>
+    <!-- VISTA 2: ESTADÍSTICAS Y HERRAMIENTAS -->
+    <div id="view-estadisticas" class="view-section">
+        <div class="card">
+            <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary)"></i> Distribución por Categoría</h3>
+            <div id="statsBarsContainer">
+                <div class="empty-state">Sin datos suficientes para graficar.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-calculator" style="color:var(--primary)"></i> Calculadora de Proporción / Cuotas</h3>
+            <div class="calc-box">
+                <div class="form-group">
+                    <label for="calcAmount">Monto Total a Dividir ($)</label>
+                    <input type="number" id="calcAmount" placeholder="0.00" oninput="calculateSplit()">
+                </div>
+                <div class="form-group">
+                    <label for="calcParts">Cantidad de partes / cuotas</label>
+                    <input type="number" id="calcParts" value="1" min="1" oninput="calculateSplit()">
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9rem; font-weight: 600; color: var(--primary-dark);">
+                    Resultado por cuota: <span id="calcResult">$0.00</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'expenses_v3_advanced';
+    const STORAGE_KEY = 'expenses_v4_pro';
+
+    function switchView(viewName, btn) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById('view-' + viewName).classList.add('active');
+        btn.classList.add('active');
+    }
 
     function toggleCardFields() {
         const category = document.getElementById('category').value;
@@ -217,7 +265,7 @@
         const lblTotal = document.getElementById('lblTotal');
         const lblPaid = document.getElementById('lblPaid');
         const lblRemaining = document.getElementById('lblRemaining');
-        const statsContainer = document.getElementById('statsContainer');
+        const statsBarsContainer = document.getElementById('statsBarsContainer');
 
         expensesList.innerHTML = '';
 
@@ -227,7 +275,7 @@
 
         if (expenses.length === 0) {
             expensesList.innerHTML = '<div class="empty-state">No hay registros cargados.</div>';
-            statsContainer.innerHTML = '<div class="empty-state">Sin datos para calcular.</div>';
+            statsBarsContainer.innerHTML = '<div class="empty-state">Sin datos suficientes para graficar.</div>';
             lblTotal.textContent = '$0.00';
             lblPaid.textContent = '$0.00';
             lblRemaining.textContent = '$0.00';
@@ -283,19 +331,36 @@
         lblPaid.textContent = `$${paid.toFixed(2)}`;
         lblRemaining.textContent = `$${(total - paid).toFixed(2)}`;
 
-        // Renderizar estadísticas por categoría
-        statsContainer.innerHTML = '';
+        // Renderizar gráficos de barras visuales en la pestaña de estadísticas
+        statsBarsContainer.innerHTML = '';
         for (let cat in catTotals) {
-            if (catTotals[cat] > 0) {
-                const row = document.createElement('div');
-                row.className = 'stat-row';
-                row.innerHTML = `<span><b>${cat}:</b></span> <span>$${catTotals[cat].toFixed(2)}</span>`;
-                statsContainer.appendChild(row);
+            let catSum = catTotals[cat];
+            if (catSum > 0) {
+                let percentage = total > 0 ? (catSum / total) * 100 : 0;
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'stat-bar-container';
+                barWrapper.innerHTML = `
+                    <div class="stat-bar-info">
+                        <span>${cat}</span>
+                        <span>$${catSum.toFixed(2)} (${percentage.toFixed(1)}%)</span>
+                    </div>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${percentage}%;"></div>
+                    </div>
+                `;
+                statsBarsContainer.appendChild(barWrapper);
             }
         }
-        if (statsContainer.innerHTML === '') {
-            statsContainer.innerHTML = '<div class="empty-state">Sin gastos asignados en categorías.</div>';
+        if (statsBarsContainer.innerHTML === '') {
+            statsBarsContainer.innerHTML = '<div class="empty-state">Sin gastos asignados en categorías.</div>';
         }
+    }
+
+    function calculateSplit() {
+        const amount = parseFloat(document.getElementById('calcAmount').value) || 0;
+        const parts = parseInt(document.getElementById('calcParts').value) || 1;
+        const result = parts > 0 ? amount / parts : 0;
+        document.getElementById('calcResult').textContent = `$${result.toFixed(2)}`;
     }
 
     function togglePay(id) {
